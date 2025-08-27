@@ -1,0 +1,82 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "email": "demo@example.com",
+      "password": "password",
+      "name": "Demo User",
+      "balance": 975,
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "email": "test@example.com",
+      "password": "testpass123",
+      "name": "Test User",
+      "balance": 500,
+      "id": "EqJU__m"
+    },
+    {
+      "email": "test2@example.com",
+      "password": "testpass123",
+      "name": "Test User 2",
+      "balance": 100,
+      "id": "a9bTB_5"
+    },
+    {
+      "email": "mobile@test.com",
+      "password": "mobilepass123",
+      "name": "Mobile Test User",
+      "balance": 200,
+      "id": "k5MkzYm"
+    },
+    {
+      "email": "user@test.com",
+      "password": "123456",
+      "name": "Test User Simple",
+      "balance": 1000,
+      "id": "simple_user_001",
+      "createdAt": "2024-01-20T10:00:00.000Z"
+    }
+  ],
+  "transactions": [
+    {
+      "id": "1",
+      "senderId": "1",
+      "receiverId": "2",
+      "amount": 50,
+      "type": "send",
+      "status": "completed",
+      "description": "Payment for lunch",
+      "createdAt": "2024-01-15T12:00:00.000Z"
+    },
+    {
+      "id": "2",
+      "senderId": "2",
+      "receiverId": "1",
+      "amount": 25,
+      "type": "receive",
+      "status": "completed",
+      "description": "Split dinner bill",
+      "createdAt": "2024-01-16T18:30:00.000Z"
+    },
+    {
+      "senderId": "1",
+      "receiverId": "EqJU__m",
+      "amount": 25,
+      "description": "Test transaction",
+      "id": "KyXoR4T"
+    }
+  ],
+  "profiles": [
+    {
+      "id": "1",
+      "userId": "1",
+      "phoneNumber": "+1234567890",
+      "avatar": null,
+      "preferences": {
+        "notifications": true,
+        "biometric": false
+      }
+    }
+  ]
+}
