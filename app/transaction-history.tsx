@@ -1,7 +1,6 @@
 import { Button } from '@/components/ui/Button';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { useAuth } from '@/utils/AuthContext';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
@@ -55,7 +54,6 @@ export default function TransactionHistoryScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const { user } = useAuth();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
@@ -120,7 +118,7 @@ export default function TransactionHistoryScreen() {
   };
 
   const renderTransaction = ({ item }: { item: Transaction }) => (
-    <View style={[styles.transactionCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+          <View style={[styles.transactionCard, { backgroundColor: colors.background, borderColor: colors.tabIconDefault }]}>
       <View style={styles.transactionHeader}>
         <View style={styles.recipientInfo}>
           <Text style={[styles.recipientName, { color: colors.text }]}>

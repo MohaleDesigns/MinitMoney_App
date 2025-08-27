@@ -2,23 +2,43 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { useAuth } from '@/utils/AuthContext';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const CURRENCIES = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'];
+const CURRENCIES = [
+  { code: 'USD', name: 'US Dollar', symbol: '$' },
+  { code: 'EUR', name: 'Euro', symbol: '€' },
+  { code: 'GBP', name: 'British Pound', symbol: '£' },
+  { code: 'JPY', name: 'Japanese Yen', symbol: '¥' },
+  { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$' },
+  { code: 'AUD', name: 'Australian Dollar', symbol: 'A$' },
+  { code: 'CHF', name: 'Swiss Franc', symbol: 'CHF' },
+  { code: 'CNY', name: 'Chinese Yuan', symbol: '¥' },
+  { code: 'INR', name: 'Indian Rupee', symbol: '₹' },
+  { code: 'BRL', name: 'Brazilian Real', symbol: 'R$' },
+  { code: 'MXN', name: 'Mexican Peso', symbol: '$' },
+  { code: 'SGD', name: 'Singapore Dollar', symbol: 'S$' },
+  { code: 'HKD', name: 'Hong Kong Dollar', symbol: 'HK$' },
+  { code: 'NZD', name: 'New Zealand Dollar', symbol: 'NZ$' },
+  { code: 'SEK', name: 'Swedish Krona', symbol: 'kr' },
+  { code: 'NOK', name: 'Norwegian Krone', symbol: 'kr' },
+  { code: 'DKK', name: 'Danish Krone', symbol: 'kr' },
+  { code: 'PLN', name: 'Polish Złoty', symbol: 'zł' },
+  { code: 'CZK', name: 'Czech Koruna', symbol: 'Kč' },
+  { code: 'HUF', name: 'Hungarian Forint', symbol: 'Ft' },
+  { code: 'RUB', name: 'Russian Ruble', symbol: '₽' }
+];
 
 export default function SendMoneyScreen() {
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState('USD');
+  const [currency, setCurrency] = useState(CURRENCIES[0]);
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
-  const { user } = useAuth();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
@@ -48,7 +68,7 @@ export default function SendMoneyScreen() {
     setTimeout(() => {
       Alert.alert(
         'Success!', 
-        `${currency} ${amount} sent to ${recipient} successfully!`,
+        `${currency.symbol} ${amount} ${currency.code} sent to ${recipient} successfully!`,
         [
           { 
             text: 'View History', 
@@ -65,7 +85,7 @@ export default function SendMoneyScreen() {
   const resetForm = () => {
     setRecipient('');
     setAmount('');
-    setCurrency('USD');
+    setCurrency(CURRENCIES[0]);
     setDescription('');
     setErrors({});
   };
@@ -110,26 +130,32 @@ export default function SendMoneyScreen() {
                 />
               </View>
               
-              <View style={styles.currencyContainer}>
-                <Text style={[styles.currencyLabel, { color: colors.text }]}>
-                  Currency
-                </Text>
-                <View style={[styles.currencyPicker, { borderColor: colors.tabIconDefault }]}>
-                  {CURRENCIES.map((curr) => (
-                    <Text
-                      key={curr}
-                      style={[
-                        styles.currencyOption,
-                        { color: currency === curr ? colors.tint : colors.text },
-                        currency === curr && { fontWeight: 'bold' }
-                      ]}
-                      onPress={() => setCurrency(curr)}
-                    >
-                      {curr}
-                    </Text>
-                  ))}
-                </View>
-              </View>
+                             <View style={styles.currencyContainer}>
+                 <Text style={[styles.currencyLabel, { color: colors.text }]}>
+                   Currency
+                 </Text>
+                 <TouchableOpacity
+                   style={[styles.currencyPicker, { borderColor: colors.tabIconDefault }]}
+                   onPress={() => {
+                     // Show currency picker modal
+                     Alert.alert(
+                       'Select Currency',
+                       'Choose a currency:',
+                       CURRENCIES.map((curr) => ({
+                         text: `${curr.symbol} ${curr.code} - ${curr.name}`,
+                         onPress: () => setCurrency(curr)
+                       }))
+                     );
+                   }}
+                 >
+                   <Text style={[styles.currencyOption, { color: colors.tint, fontWeight: 'bold' }]}>
+                     {currency.symbol} {currency.code}
+                   </Text>
+                   <Text style={[styles.currencyDropdownIcon, { color: colors.tabIconDefault }]}>
+                     ▼
+                   </Text>
+                 </TouchableOpacity>
+               </View>
             </View>
 
             <Input
@@ -145,14 +171,14 @@ export default function SendMoneyScreen() {
               <Text style={[styles.summaryTitle, { color: colors.text }]}>
                 Transaction Summary
               </Text>
-              <View style={styles.summaryRow}>
-                <Text style={[styles.summaryLabel, { color: colors.tabIconDefault }]}>
-                  Amount:
-                </Text>
-                <Text style={[styles.summaryValue, { color: colors.text }]}>
-                  {amount ? `${currency} ${amount}` : '--'}
-                </Text>
-              </View>
+                             <View style={styles.summaryRow}>
+                 <Text style={[styles.summaryLabel, { color: colors.tabIconDefault }]}>
+                   Amount:
+                 </Text>
+                 <Text style={[styles.summaryValue, { color: colors.text }]}>
+                   {amount ? `${currency.symbol} ${amount} ${currency.code}` : '--'}
+                 </Text>
+               </View>
               <View style={styles.summaryRow}>
                 <Text style={[styles.summaryLabel, { color: colors.tabIconDefault }]}>
                   Recipient:
@@ -234,16 +260,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderWidth: 1,
     borderRadius: 12,
-    padding: 4,
-    flexWrap: 'wrap',
-    gap: 4,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(0,0,0,0.02)',
   },
   currencyOption: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    fontSize: 14,
-    fontWeight: '500',
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  currencyDropdownIcon: {
+    fontSize: 12,
+    marginLeft: 8,
   },
   summary: {
     backgroundColor: 'rgba(0,0,0,0.05)',

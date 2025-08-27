@@ -5,7 +5,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { useAuth } from '@/utils/AuthContext';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function RegisterScreen() {
@@ -25,6 +25,8 @@ export default function RegisterScreen() {
 
     if (!name.trim()) {
       newErrors.name = 'Name is required';
+    } else if (name.trim().length < 2) {
+      newErrors.name = 'Name must be at least 2 characters';
     }
 
     if (!email.trim()) {
@@ -33,13 +35,15 @@ export default function RegisterScreen() {
       newErrors.email = 'Please enter a valid email';
     }
 
-    if (!password) {
+    if (!password.trim()) {
       newErrors.password = 'Password is required';
     } else if (password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
     }
 
-    if (password !== confirmPassword) {
+    if (!confirmPassword.trim()) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (password !== confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
@@ -51,17 +55,34 @@ export default function RegisterScreen() {
     if (!validateForm()) return;
 
     setLoading(true);
+    
     try {
-      const success = await register(email, password, name);
-      if (success) {
-        Alert.alert('Success', 'Account created successfully!', [
-          { text: 'OK', onPress: () => router.replace('/(tabs)') }
-        ]);
-      } else {
-        Alert.alert('Error', 'Failed to create account. Please try again.');
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Create user data
+      const userData = {
+        id: Date.now().toString(),
+        name: name.trim(),
+        email: email.trim(),
+        token: 'demo-token-' + Date.now(),
+        balance: 1000.00 // Starting balance for new users
+      };
+      
+      await register(userData);
+      
+      Alert.alert(
+        'Success!', 
+        'Account created successfully! Welcome to MinitMoney!',
+        [
+          { 
+            text: 'Continue', 
+            onPress: () => router.replace('/(tabs)') 
+          }
+        ]
+      );
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -128,19 +149,19 @@ export default function RegisterScreen() {
               title="Create Account"
               onPress={handleRegister}
               loading={loading}
+              disabled={!name.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()}
               style={styles.registerButton}
             />
 
-            <View style={styles.loginLink}>
-              <Text style={[styles.loginText, { color: colors.tabIconDefault }]}>
+            <View style={styles.footer}>
+              <Text style={[styles.footerText, { color: colors.tabIconDefault }]}>
                 Already have an account?{' '}
               </Text>
-              <Text 
-                style={[styles.loginLinkText, { color: colors.tint }]}
-                onPress={() => router.push('/(auth)/login')}
-              >
-                Sign In
-              </Text>
+              <TouchableOpacity onPress={() => router.push('/login' as any)}>
+                <Text style={[styles.linkText, { color: colors.tint }]}>
+                  Sign In
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
         </ScrollView>
@@ -159,11 +180,11 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: 24,
+    justifyContent: 'center',
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
-    marginTop: 20,
+    marginBottom: 48,
   },
   title: {
     fontSize: 32,
@@ -180,18 +201,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   registerButton: {
-    marginTop: 16,
-    marginBottom: 24,
+    marginBottom: 32,
   },
-  loginLink: {
+  footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loginText: {
+  footerText: {
     fontSize: 16,
   },
-  loginLinkText: {
+  linkText: {
     fontSize: 16,
     fontWeight: '600',
   },

@@ -3,55 +3,25 @@ import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useAuth } from '@/utils/AuthContext';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// Mock transaction type
-type Transaction = {
+interface TransactionWithUsers {
   id: string;
-  recipient: string;
+  senderId: string;
+  receiverId: string;
   amount: number;
-  currency: string;
+  description: string;
   status: 'completed' | 'pending' | 'failed';
-  timestamp: number;
-  description?: string;
-};
-
-// Mock transaction data
-const MOCK_TRANSACTIONS: Transaction[] = [
-  {
-    id: '1',
-    recipient: 'John Doe',
-    amount: 50.00,
-    currency: 'USD',
-    status: 'completed',
-    timestamp: Date.now() - 86400000, // 1 day ago
-    description: 'Lunch payment'
-  },
-  {
-    id: '2',
-    recipient: 'Jane Smith',
-    amount: 25.50,
-    currency: 'USD',
-    status: 'completed',
-    timestamp: Date.now() - 172800000, // 2 days ago
-    description: 'Coffee and snacks'
-  },
-  {
-    id: '3',
-    recipient: 'Bob Johnson',
-    amount: 100.00,
-    currency: 'USD',
-    status: 'pending',
-    timestamp: Date.now() - 259200000, // 3 days ago
-    description: 'Rent contribution'
-  }
-];
+  timestamp: string;
+  sender: { name: string };
+  receiver: { name: string };
+}
 
 export default function TransactionHistoryTab() {
-  const [transactions, setTransactions] = useState<Transaction[]>(MOCK_TRANSACTIONS);
-  const [loading, setLoading] = useState(false);
+  const [transactions, setTransactions] = useState<TransactionWithUsers[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -62,13 +32,55 @@ export default function TransactionHistoryTab() {
   const loadTransactions = async () => {
     try {
       setError(null);
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setTransactions(MOCK_TRANSACTIONS);
+      setLoading(true);
+      // Mock transaction data
+      const mockTransactions: TransactionWithUsers[] = [
+        {
+          id: '1',
+          senderId: '1',
+          receiverId: '2',
+          amount: 100,
+          description: 'Lunch payment',
+          status: 'completed',
+          timestamp: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+          sender: { name: 'John Doe' },
+          receiver: { name: 'Jane Smith' }
+        },
+        {
+          id: '2',
+          senderId: '3',
+          receiverId: '1',
+          amount: 250,
+          description: 'Reimbursement',
+          status: 'completed',
+          timestamp: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
+          sender: { name: 'Bob Johnson' },
+          receiver: { name: 'John Doe' }
+        },
+        {
+          id: '3',
+          senderId: '1',
+          receiverId: '4',
+          amount: 75,
+          description: 'Coffee',
+          status: 'completed',
+          timestamp: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
+          sender: { name: 'John Doe' },
+          receiver: { name: 'Alice Brown' }
+        }
+      ];
+      setTransactions(mockTransactions);
     } catch (err) {
       setError('Failed to load transactions');
+      console.error('Load transactions error:', err);
+    } finally {
+      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadTransactions();
+  }, []);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -87,8 +99,8 @@ export default function TransactionHistoryTab() {
           style: 'destructive',
           onPress: async () => {
             try {
-              // For now, just clear local state since GraphQL doesn't support bulk delete
-              // In a real app, you'd call a GraphQL mutation to delete transactions
+              // For now, just clear local state
+              // In a real app, you'd call an API to delete transactions
               setTransactions([]);
               Alert.alert('Success', 'Transaction history cleared');
             } catch (err) {
@@ -100,7 +112,7 @@ export default function TransactionHistoryTab() {
     );
   };
 
-  const getStatusColor = (status: Transaction['status']) => {
+  const getStatusColor = (status: TransactionWithUsers['status']) => {
     switch (status) {
       case 'completed': return '#4CAF50';
       case 'pending': return '#FF9800';
@@ -109,48 +121,64 @@ export default function TransactionHistoryTab() {
     }
   };
 
-  const getStatusText = (status: Transaction['status']) => {
+  const getStatusText = (status: TransactionWithUsers['status']) => {
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
-  const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp);
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { 
       hour: '2-digit', 
       minute: '2-digit' 
     });
   };
 
-  const renderTransaction = ({ item }: { item: Transaction }) => (
-    <View style={[styles.transactionCard, { backgroundColor: colors.background, borderColor: colors.tabIconDefault }]}>
-      <View style={styles.transactionHeader}>
-        <View style={styles.recipientInfo}>
-          <Text style={[styles.recipientName, { color: colors.text }]}>
-            {item.recipient}
-          </Text>
-          <Text style={[styles.transactionDate, { color: colors.tabIconDefault }]}>
-            {formatDate(item.timestamp)}
-          </Text>
-        </View>
-        <View style={styles.amountInfo}>
-          <Text style={[styles.amount, { color: colors.text }]}>
-            {item.currency} {item.amount.toFixed(2)}
-          </Text>
-          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-            <Text style={styles.statusText}>
-              {getStatusText(item.status)}
+  const getTransactionType = (transaction: TransactionWithUsers) => {
+    if (transaction.senderId === user?.id) {
+      return { type: 'Sent', color: '#F44336', prefix: '-' };
+    } else {
+      return { type: 'Received', color: '#4CAF50', prefix: '+' };
+    }
+  };
+
+  const renderTransaction = ({ item }: { item: TransactionWithUsers }) => {
+    const transactionType = getTransactionType(item);
+    const recipientName = transactionType.type === 'Sent' ? item.receiver.name : item.sender.name;
+    
+    return (
+      <View style={[styles.transactionCard, { backgroundColor: colors.background, borderColor: colors.tabIconDefault }]}>
+        <View style={styles.transactionHeader}>
+          <View style={styles.recipientInfo}>
+            <Text style={[styles.recipientName, { color: colors.text }]}>
+              {recipientName}
+            </Text>
+            <Text style={[styles.transactionDate, { color: colors.tabIconDefault }]}>
+              {formatDate(item.timestamp)}
+            </Text>
+            <Text style={[styles.transactionType, { color: transactionType.color }]}>
+              {transactionType.type}
             </Text>
           </View>
+          <View style={styles.amountInfo}>
+            <Text style={[styles.amount, { color: colors.text }]}>
+              ${item.amount.toFixed(2)}
+            </Text>
+            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
+              <Text style={styles.statusText}>
+                {getStatusText(item.status)}
+              </Text>
+            </View>
+          </View>
         </View>
+        
+        {item.description && (
+          <Text style={[styles.description, { color: colors.tabIconDefault }]}>
+            {item.description}
+          </Text>
+        )}
       </View>
-      
-      {item.description && (
-        <Text style={[styles.description, { color: colors.tabIconDefault }]}>
-          {item.description}
-        </Text>
-      )}
-    </View>
-  );
+    );
+  };
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
@@ -295,6 +323,12 @@ const styles = StyleSheet.create({
   },
   transactionDate: {
     fontSize: 14,
+    marginBottom: 4,
+  },
+  transactionType: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
   },
   amountInfo: {
     alignItems: 'flex-end',

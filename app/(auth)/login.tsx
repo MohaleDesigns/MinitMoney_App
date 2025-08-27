@@ -5,7 +5,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { useAuth } from '@/utils/AuthContext';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function LoginScreen() {
@@ -23,10 +23,14 @@ export default function LoginScreen() {
 
     if (!email.trim()) {
       newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = 'Please enter a valid email';
     }
 
-    if (!password) {
+    if (!password.trim()) {
       newErrors.password = 'Password is required';
+    } else if (password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
     }
 
     setErrors(newErrors);
@@ -37,24 +41,75 @@ export default function LoginScreen() {
     if (!validateForm()) return;
 
     setLoading(true);
+    
     try {
-      const success = await login(email, password);
-      if (success) {
-        router.replace('/(tabs)');
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // For demo purposes, accept any valid email/password combination
+      // In a real app, you'd validate against your backend
+      if (email.trim() && password.trim()) {
+        // Create user data
+        const userData = {
+          id: '1',
+          email: email.trim(),
+          name: email.split('@')[0], // Use email prefix as name for demo
+          token: 'demo-token-' + Date.now(),
+          balance: 2500.75
+        };
+        
+        await login(userData);
+        
+        Alert.alert(
+          'Success!', 
+          'Login successful!',
+          [
+            { 
+              text: 'Continue', 
+              onPress: () => router.replace('/(tabs)') 
+            }
+          ]
+        );
       } else {
-        Alert.alert('Error', 'Invalid email or password. Try demo@example.com / password');
+        Alert.alert('Error', 'Invalid credentials. Please try again.');
       }
-    } catch (error) {
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDemoLogin = () => {
-    setEmail('demo@example.com');
-    setPassword('password');
-    setErrors({});
+  const handleDemoLogin = async () => {
+    setLoading(true);
+    
+    try {
+      // Demo account
+      const userData = {
+        id: '1',
+        email: 'demo@example.com',
+        name: 'Demo User',
+        token: 'demo-token-' + Date.now(),
+        balance: 2500.75
+      };
+      
+      await login(userData);
+      
+      Alert.alert(
+        'Demo Login!', 
+        'Welcome to the demo account!',
+        [
+          { 
+            text: 'Continue', 
+            onPress: () => router.replace('/(tabs)') 
+          }
+        ]
+      );
+    } catch (error: any) {
+      Alert.alert('Error', 'Demo login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -100,26 +155,27 @@ export default function LoginScreen() {
               title="Sign In"
               onPress={handleLogin}
               loading={loading}
+              disabled={!email.trim() || !password.trim()}
               style={styles.loginButton}
             />
 
             <Button
               title="Try Demo Account"
               onPress={handleDemoLogin}
+              loading={loading}
               variant="outline"
               style={styles.demoButton}
             />
 
-            <View style={styles.registerLink}>
-              <Text style={[styles.registerText, { color: colors.tabIconDefault }]}>
+            <View style={styles.footer}>
+              <Text style={[styles.footerText, { color: colors.tabIconDefault }]}>
                 Don't have an account?{' '}
               </Text>
-              <Text 
-                style={[styles.registerLinkText, { color: colors.tint }]}
-                onPress={() => router.push('/(auth)/register')}
-              >
-                Sign Up
-              </Text>
+              <TouchableOpacity onPress={() => router.push('/register' as any)}>
+                <Text style={[styles.linkText, { color: colors.tint }]}>
+                  Sign Up
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
         </ScrollView>
@@ -138,11 +194,11 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: 24,
+    justifyContent: 'center',
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
-    marginTop: 20,
+    marginBottom: 48,
   },
   title: {
     fontSize: 32,
@@ -159,21 +215,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   loginButton: {
-    marginTop: 16,
     marginBottom: 16,
   },
   demoButton: {
-    marginBottom: 24,
+    marginBottom: 32,
   },
-  registerLink: {
+  footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  registerText: {
+  footerText: {
     fontSize: 16,
   },
-  registerLinkText: {
+  linkText: {
     fontSize: 16,
     fontWeight: '600',
   },

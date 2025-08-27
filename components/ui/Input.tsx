@@ -39,7 +39,7 @@ export const Input: React.FC<InputProps> = ({
 
   const inputContainerStyle = [
     styles.inputContainer,
-    { borderColor: error ? '#ff4444' : colors.border },
+    { borderColor: error ? '#ff4444' : colors.tabIconDefault },
     disabled && styles.disabled,
     style
   ];

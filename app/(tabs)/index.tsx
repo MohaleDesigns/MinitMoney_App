@@ -1,16 +1,17 @@
 import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useAuth } from '@/utils/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React from 'react';
-import { Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { Alert, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function HomeScreen() {
-  const { user, logout } = useAuth();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const { user, logout } = useAuth();
+  const [stats, setStats] = useState({ totalSent: 1250.50, totalReceived: 800.25, totalTransactions: 12 });
 
   const handleLogout = () => {
     Alert.alert(
@@ -28,11 +29,11 @@ export default function HomeScreen() {
   };
 
   const navigateToFeature = (route: string) => {
-    router.push(route);
+    router.push(route as any);
   };
 
   return (
-    <ThemedView style={styles.container}>
+    <ScrollView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.userInfo}>
@@ -44,17 +45,23 @@ export default function HomeScreen() {
           </ThemedText>
         </View>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-          <ThemedText style={[styles.logoutText, { color: colors.tint }]}>
-            Logout
-          </ThemedText>
+          <Ionicons name="log-out-outline" size={24} color={colors.tint} />
         </TouchableOpacity>
+      </View>
+
+      {/* Balance Card */}
+      <View style={[styles.balanceCard, { backgroundColor: colors.background, borderColor: colors.tabIconDefault }]}>
+        <ThemedText style={styles.balanceLabel}>Current Balance</ThemedText>
+        <ThemedText type="title" style={[styles.balanceAmount, { color: colors.tint }]}>
+          ${user?.balance?.toFixed(2) || '0.00'}
+        </ThemedText>
       </View>
 
       {/* Feature Cards */}
       <View style={styles.featuresContainer}>
         <TouchableOpacity 
-          style={[styles.featureCard, { backgroundColor: colors.background, borderColor: colors.border }]}
-          onPress={() => navigateToFeature('/send-money')}
+          style={[styles.featureCard, { backgroundColor: colors.background, borderColor: colors.tabIconDefault }]}
+          onPress={() => navigateToFeature('/(tabs)/send-money')}
         >
           <View style={styles.featureIcon}>
             <ThemedText style={styles.featureEmoji}>💸</ThemedText>
@@ -71,8 +78,8 @@ export default function HomeScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity 
-          style={[styles.featureCard, { backgroundColor: colors.background, borderColor: colors.border }]}
-          onPress={() => navigateToFeature('/transaction-history')}
+          style={[styles.featureCard, { backgroundColor: colors.background, borderColor: colors.tabIconDefault }]}
+          onPress={() => navigateToFeature('/(tabs)/transaction-history')}
         >
           <View style={styles.featureIcon}>
             <ThemedText style={styles.featureEmoji}>📊</ThemedText>
@@ -95,13 +102,25 @@ export default function HomeScreen() {
           Quick Stats
         </ThemedText>
         <View style={styles.statsRow}>
-          <View style={[styles.statCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
-            <ThemedText style={styles.statNumber}>0</ThemedText>
+          <View style={[styles.statCard, { backgroundColor: colors.background, borderColor: colors.tabIconDefault }]}>
+            <ThemedText style={styles.statNumber}>{stats.totalTransactions}</ThemedText>
             <ThemedText style={styles.statLabel}>Transactions</ThemedText>
           </View>
-          <View style={[styles.statCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
-            <ThemedText style={styles.statNumber}>$0</ThemedText>
+          <View style={[styles.statCard, { backgroundColor: colors.background, borderColor: colors.tabIconDefault }]}>
+            <ThemedText style={styles.statNumber}>${stats.totalSent.toFixed(2)}</ThemedText>
             <ThemedText style={styles.statLabel}>Total Sent</ThemedText>
+          </View>
+        </View>
+        <View style={styles.statsRow}>
+          <View style={[styles.statCard, { backgroundColor: colors.background, borderColor: colors.tabIconDefault }]}>
+            <ThemedText style={styles.statNumber}>${stats.totalReceived.toFixed(2)}</ThemedText>
+            <ThemedText style={styles.statLabel}>Total Received</ThemedText>
+          </View>
+          <View style={[styles.statCard, { backgroundColor: colors.background, borderColor: colors.tabIconDefault }]}>
+            <ThemedText style={styles.statNumber}>
+              ${((stats.totalReceived - stats.totalSent) + (user?.balance || 0)).toFixed(2)}
+            </ThemedText>
+            <ThemedText style={styles.statLabel}>Net Position</ThemedText>
           </View>
         </View>
       </View>
@@ -115,7 +134,7 @@ export default function HomeScreen() {
           Version 1.0.0
         </ThemedText>
       </View>
-    </ThemedView>
+    </ScrollView>
   );
 }
 
@@ -128,12 +147,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 32,
+    marginBottom: 24,
     marginTop: 20,
   },
   userInfo: {
     flex: 1,
     marginRight: 16,
+  },
+  logoutButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0,0,0,0.05)',
   },
   welcomeText: {
     marginBottom: 8,
@@ -142,15 +166,30 @@ const styles = StyleSheet.create({
     fontSize: 16,
     opacity: 0.8,
   },
-  logoutButton: {
-    padding: 8,
+
+  balanceCard: {
+    padding: 24,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  logoutText: {
+  balanceLabel: {
     fontSize: 16,
-    fontWeight: '600',
+    opacity: 0.7,
+    marginBottom: 8,
+  },
+  balanceAmount: {
+    fontSize: 36,
+    fontWeight: 'bold',
   },
   featuresContainer: {
-    marginBottom: 32,
+    marginBottom: 24,
   },
   featureCard: {
     flexDirection: 'row',
@@ -192,7 +231,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   statsContainer: {
-    marginBottom: 32,
+    marginBottom: 24,
   },
   statsTitle: {
     marginBottom: 16,
@@ -200,6 +239,7 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     gap: 16,
+    marginBottom: 16,
   },
   statCard: {
     flex: 1,
@@ -214,8 +254,8 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   statNumber: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '500',
     marginBottom: 8,
   },
   statLabel: {

@@ -1,4 +1,3 @@
-import { useAuth } from '@/utils/AuthContext';
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform } from 'react-native';
@@ -9,12 +8,6 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
-  const { user, isLoading } = useAuth();
-
-  // Don't redirect here - let the root layout handle routing
-  if (isLoading || !user) {
-    return null; // Will be handled by root layout
-  }
 
   return (
     <Tabs
