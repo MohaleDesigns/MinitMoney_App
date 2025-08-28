@@ -9,7 +9,7 @@ A modern, cross-platform mobile application for instant money transfers and fina
 ### Core Functionality
 - **Money Transfers**: Send money instantly to friends and family
 - **Transaction History**: Complete transaction tracking with status updates
-- **Multi-Currency Support**: Support for USD, EUR, GBP, JPY, CAD, AUD
+- **Multi-Currency Support**: Support for USD, EUR, GBP, JPY, CAD, AUD etc...
 - **User Authentication**: Secure login and registration system
 
 ## 🏗️ Architecture
@@ -19,16 +19,9 @@ A modern, cross-platform mobile application for instant money transfers and fina
 - **Expo SDK 53**: Development platform with built-in tools
 - **TypeScript**: Type-safe development with strict type checking
 - **Expo Router**: File-based routing system
-- **Apollo Client**: GraphQL client for data management
 
 ### Backend Stack
-- **Node.js**: Server runtime environment
-- **Express.js**: Web application framework
-- **GraphQL**: Query language and runtime
-- **Apollo Server**: GraphQL server implementation
-- **PostgreSQL**: Relational database
-- **Sequelize**: Database ORM
-- **JWT**: Authentication and authorization
+- **Prisma Accelerate**: A global database cache and connection pooler that works in conjunction with a database, rather than being a database itself.
 
 ### Data Flow
 - **GraphQL API**: Efficient data fetching with single endpoint
@@ -38,48 +31,77 @@ A modern, cross-platform mobile application for instant money transfers and fina
 ## 🛠️ Installation & Setup
 
 ### Prerequisites
-- **Node.js 18+** or **Bun** (recommended)
+- **Node.js 18+** or **Bun**
 - **Expo CLI**: `npm install -g @expo/cli`
 - **Git** for version control
-- **PostgreSQL** database (for backend)
 
 ### Quick Start
 
 1. **Clone the repository**
-   ```bash
+   ```on the terminal
    git clone https://github.com/MohaleDesigns/MinitMoney_App.git
    cd MinitMoney_App
    ```
 
 2. **Install mobile app dependencies**
-   ```bash
-   # Using Bun (recommended)
+   ```on the terminal
+   # Using Bun
    bun install
    
    # Or using npm
    npm install
    ```
 
-3. **Start mobile app**
-   ```bash
-   cd ..
-   bun run start
+2. **Set the right IP Address**
+   ```on the .env
+   # I pushed the .env file just to make thing easy for you as it is not good practice
+   
+   Change the EXPO_PUBLIC_IP_ADDRESS to your IP Address
+   
+   # How get an IP Address
+
+   On Windows
+   1. On your terminal type "ipconfig" without the double qoutation marks
+   2. Look for the “IPv4 Address” under the network adapter you’re using (usually Wi-Fi or Ethernet).
+      Example: 192.168.1.10
+
+   On MacOS
+   1. On your terminal type "ifconfig" without the double qoutation marks
+   2. Look for the inet value under your active interface (usually en0 for Wi-Fi).
+
+   On Mac
+   1. On your terminal type "ip addr show" without the double qoutation marks
+   2. Look for the inet value under your active network interface (like wlan0 or eth0).
+      Example: 192.168.1.10/24 
    ```
+
+3. **Start mobile app**
+   ```on the terminal
+   # Using Bun
+   bun run start
+
+   # Or using npm
+   npm run start
+   ```
+
+3. **Run the app** 
+   ```
+   # Use Expo App - download on Play Store, App Gallery or App Store if you don't have
+   Scan the QR code using the Expo app
+   ```  
 
 ## 📱 App Structure
 
 ### Navigation
 - **Authentication Flow**: Login/Register screens
-- **Tab Navigation**: Home, Send Money, Transaction History, Explore
+- **Tab Navigation**: Home, Send Money, Transaction History
 - **Stack Navigation**: Nested screens within tabs
 
 ### Key Screens
-- **Login**: To login into the app but using dummy data
-- **Register**: To register a new user, it simulate creating a new user
+- **Login**: To login into the app
+- **Register**: To register a new user, it creates a new user to the Prisma database
 - **Home**: Dashboard with quick actions and stats
 - **Send Money**: Money transfer form with validation
-- **Transaction History**: List of all transactions
-
-**NOTE**: The app uses mocked up data, couldn't get to back-end side of things because I working on the assignment late at night after hours.
+- **Transaction History**: List of all user transactions
 
 **MiniMoney** - Simplifying money transfers with modern mobile technology.
