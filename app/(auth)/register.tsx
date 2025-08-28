@@ -69,8 +69,6 @@ export default function RegisterScreen() {
 
       const data = await response.json();
 
-      console.log(data);
-      
       Alert.alert(
         'Success!', 
         'Account created successfully! Welcome to MinitMoney!',

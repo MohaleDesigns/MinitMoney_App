@@ -46,7 +46,6 @@ export default function TransactionHistoryTab() {
       }
 
       const data = await response.json();
-      console.log('Fetched transactions:', data);
       setTransactions(data);
     } catch (err) {
       setError('Failed to load transactions');

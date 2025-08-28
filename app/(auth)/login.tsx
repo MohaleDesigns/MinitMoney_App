@@ -43,20 +43,12 @@ export default function LoginScreen() {
 
     setLoading(true);
     
-    try {
-      console.log('Attempting login with:', { email: email.trim(), password });
-      console.log('Available users:', users);
-      
-      // Check if fetched users contain a matching user
+    try {// Check if fetched users contain a matching user
       const matchingUser = users.find(user => {
-        console.log('Checking user:', user);
         const emailMatch = user.email === email.trim();
         const passwordMatch = user.passwordHash === password;
-        console.log('Email match:', emailMatch, 'Password match:', passwordMatch);
         return emailMatch && passwordMatch;
       });
-      
-      console.log('Matching user found:', matchingUser);
       
       if (matchingUser) {
         // Create user data from the matched user
@@ -122,7 +114,6 @@ export default function LoginScreen() {
 
       const data = await response.json();
 
-      console.log("Users: ", data);
       setUsers(data);
     } catch (error: any) {
       console.log(error);

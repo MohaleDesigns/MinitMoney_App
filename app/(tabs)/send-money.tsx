@@ -105,8 +105,6 @@ export default function SendMoneyScreenTab() {
 
       const data = await response.json();
 
-      console.log(data);
-
       Alert.alert("Success!", "Money sent successfully!", [
         {
           text: "Continue",
@@ -142,7 +140,6 @@ export default function SendMoneyScreenTab() {
 
       const data = await response.json();
 
-      console.log("Users: ", data);
       setUsers(data);
     } catch (error: any) {
       console.log(error);
