@@ -57,9 +57,7 @@ export default function RegisterScreen() {
     setLoading(true);
     
     try {
-      // const response = await fetch('http://localhost:8081/api/user', {
-      // const response = await fetch('exp://192.168.43.70:8081/api/user', {
-      const response = await fetch('http://192.168.43.70:8081/api/user', {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_IP_ADDRESS}:8081/api/user`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

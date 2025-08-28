@@ -14,7 +14,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [users, setUsers] = useState<any[]>([]);
-  
+
   const { login } = useAuth();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
@@ -110,7 +110,7 @@ export default function LoginScreen() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch("http://192.168.43.70:8081/api/user");
+      const response = await fetch(`${process.env.EXPO_PUBLIC_IP_ADDRESS}:8081/api/user`);
 
       const data = await response.json();
 
