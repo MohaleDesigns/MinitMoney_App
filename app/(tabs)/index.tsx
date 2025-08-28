@@ -2,17 +2,63 @@ import { ThemedText } from '@/components/ThemedText';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useAuth } from '@/utils/AuthContext';
-import { formatCurrency, getFirstName } from '@/utils/helpers';
+import { calculateTransactionStats, formatCurrency, getFirstName } from '@/utils/helpers';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+
+interface TransactionWithUsers {
+  id: string;
+  senderId: string;
+  receiverId: string;
+  amount: number;
+  description: string;
+  status: 'completed' | 'pending' | 'failed';
+  createdAt: string;
+  sender: { id: string; fullName: string; email: string };
+  receiver: { id: string; fullName: string; email: string };
+}
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const { user, logout } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [transactions, setTransactions] = useState<TransactionWithUsers[]>([]);
+  const [transactionStats, setTransactionStats] = useState({
+    totalTransactions: 0,
+    totalSent: 0,
+    totalReceived: 0,
+    netPosition: 0
+  });
+
+  const loadTransactions = async () => {
+    try {
+      if (!user?.id) return;
+
+      const response = await fetch(`/api/transaction?userId=${user.id}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch transactions');
+      }
+
+      const data = await response.json();
+      setTransactions(data);
+      
+      // Calculate stats from transaction data
+      const stats = calculateTransactionStats(data, user.id);
+      setTransactionStats(stats);
+    } catch (err) {
+      console.error('Load transactions error:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.id) {
+      loadTransactions();
+    }
+  }, [user?.id]);
 
   const handleLogout = async () => {
     Alert.alert(
@@ -142,21 +188,21 @@ export default function HomeScreen() {
         </ThemedText>
         <View style={styles.statsRow}>
           <View style={[styles.statCard, { backgroundColor: colors.background, borderColor: colors.tabIconDefault }]}>
-            <ThemedText style={styles.statNumber}>12</ThemedText>
+            <ThemedText style={styles.statNumber}>{transactionStats.totalTransactions}</ThemedText>
             <ThemedText style={styles.statLabel}>Transactions</ThemedText>
           </View>
           <View style={[styles.statCard, { backgroundColor: colors.background, borderColor: colors.tabIconDefault }]}>
-            <ThemedText style={styles.statNumber}>$1,250.50</ThemedText>
+            <ThemedText style={styles.statNumber}>{formatCurrency(transactionStats.totalSent)}</ThemedText>
             <ThemedText style={styles.statLabel}>Total Sent</ThemedText>
           </View>
         </View>
         <View style={styles.statsRow}>
           <View style={[styles.statCard, { backgroundColor: colors.background, borderColor: colors.tabIconDefault }]}>
-            <ThemedText style={styles.statNumber}>$800.25</ThemedText>
+            <ThemedText style={styles.statNumber}>{formatCurrency(transactionStats.totalReceived)}</ThemedText>
             <ThemedText style={styles.statLabel}>Total Received</ThemedText>
           </View>
           <View style={[styles.statCard, { backgroundColor: colors.background, borderColor: colors.tabIconDefault }]}>
-            <ThemedText style={styles.statNumber}>$1,550.50</ThemedText>
+            <ThemedText style={styles.statNumber}>{formatCurrency(transactionStats.netPosition)}</ThemedText>
             <ThemedText style={styles.statLabel}>Net Position</ThemedText>
           </View>
         </View>
