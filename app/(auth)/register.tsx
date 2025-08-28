@@ -57,19 +57,19 @@ export default function RegisterScreen() {
     setLoading(true);
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Create user data
-      const userData = {
-        id: Date.now().toString(),
-        name: name.trim(),
-        email: email.trim(),
-        token: 'demo-token-' + Date.now(),
-        balance: 1000.00 // Starting balance for new users
-      };
-      
-      await register(userData);
+      // const response = await fetch('http://localhost:8081/api/user', {
+      // const response = await fetch('exp://192.168.43.70:8081/api/user', {
+      const response = await fetch('http://192.168.43.70:8081/api/user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, fullName: name, password, balance: 1000 }),
+      });
+
+      const data = await response.json();
+
+      console.log(data);
       
       Alert.alert(
         'Success!', 
@@ -77,11 +77,12 @@ export default function RegisterScreen() {
         [
           { 
             text: 'Continue', 
-            onPress: () => router.replace('/(tabs)') 
+            onPress: () => router.replace('/(auth)/login') 
           }
         ]
       );
     } catch (error: any) {
+      console.log(error);
       Alert.alert('Error', error.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);

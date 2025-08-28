@@ -4,7 +4,7 @@ import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useAuth } from '@/utils/AuthContext';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -13,6 +13,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [users, setUsers] = useState<any[]>([]);
   
   const { login } = useAuth();
   const colorScheme = useColorScheme();
@@ -43,33 +44,32 @@ export default function LoginScreen() {
     setLoading(true);
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('Attempting login with:', { email: email.trim(), password });
+      console.log('Available users:', users);
       
-      // For demo purposes, accept any valid email/password combination
-      // In a real app, you'd validate against your backend
-      if (email.trim() && password.trim()) {
-        // Create user data
+      // Check if fetched users contain a matching user
+      const matchingUser = users.find(user => {
+        console.log('Checking user:', user);
+        const emailMatch = user.email === email.trim();
+        const passwordMatch = user.passwordHash === password;
+        console.log('Email match:', emailMatch, 'Password match:', passwordMatch);
+        return emailMatch && passwordMatch;
+      });
+      
+      console.log('Matching user found:', matchingUser);
+      
+      if (matchingUser) {
+        // Create user data from the matched user
         const userData = {
-          id: '1',
-          email: email.trim(),
-          name: email.split('@')[0], // Use email prefix as name for demo
-          token: 'demo-token-' + Date.now(),
-          balance: 2500.75
+          id: matchingUser.id || '1',
+          email: matchingUser.email,
+          name: matchingUser.fullName || matchingUser.email.split('@')[0],
+          token: 'auth-token-' + Date.now(),
+          balance: matchingUser.balance || 0
         };
         
         await login(userData);
-        
-        Alert.alert(
-          'Success!', 
-          'Login successful!',
-          [
-            { 
-              text: 'Continue', 
-              onPress: () => router.replace('/(tabs)') 
-            }
-          ]
-        );
+        router.replace('/(tabs)') 
       } else {
         Alert.alert('Error', 'Invalid credentials. Please try again.');
       }
@@ -109,6 +109,27 @@ export default function LoginScreen() {
       Alert.alert('Error', 'Demo login failed. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch("http://192.168.43.70:8081/api/user");
+
+      const data = await response.json();
+
+      console.log("Users: ", data);
+      setUsers(data);
+    } catch (error: any) {
+      console.log(error);
+      Alert.alert(
+        "Error",
+        error.message || "Failed to fetch users. Please try again."
+      );
     }
   };
 
@@ -159,17 +180,17 @@ export default function LoginScreen() {
               style={styles.loginButton}
             />
 
-            <Button
+            {/* <Button
               title="Try Demo Account"
               onPress={handleDemoLogin}
               loading={loading}
               variant="outline"
               style={styles.demoButton}
-            />
+            /> */}
 
             <View style={styles.footer}>
               <Text style={[styles.footerText, { color: colors.tabIconDefault }]}>
-                Don't have an account?{' '}
+                Don&apos;t have an account?{' '}
               </Text>
               <TouchableOpacity onPress={() => router.push('/register' as any)}>
                 <Text style={[styles.linkText, { color: colors.tint }]}>

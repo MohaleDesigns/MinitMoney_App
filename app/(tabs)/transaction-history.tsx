@@ -14,9 +14,9 @@ interface TransactionWithUsers {
   amount: number;
   description: string;
   status: 'completed' | 'pending' | 'failed';
-  timestamp: string;
-  sender: { name: string };
-  receiver: { name: string };
+  createdAt: string;
+  sender: { id: string; fullName: string; email: string };
+  receiver: { id: string; fullName: string; email: string };
 }
 
 export default function TransactionHistoryTab() {
@@ -33,43 +33,21 @@ export default function TransactionHistoryTab() {
     try {
       setError(null);
       setLoading(true);
-      // Mock transaction data
-      const mockTransactions: TransactionWithUsers[] = [
-        {
-          id: '1',
-          senderId: '1',
-          receiverId: '2',
-          amount: 100,
-          description: 'Lunch payment',
-          status: 'completed',
-          timestamp: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-          sender: { name: 'John Doe' },
-          receiver: { name: 'Jane Smith' }
-        },
-        {
-          id: '2',
-          senderId: '3',
-          receiverId: '1',
-          amount: 250,
-          description: 'Reimbursement',
-          status: 'completed',
-          timestamp: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-          sender: { name: 'Bob Johnson' },
-          receiver: { name: 'John Doe' }
-        },
-        {
-          id: '3',
-          senderId: '1',
-          receiverId: '4',
-          amount: 75,
-          description: 'Coffee',
-          status: 'completed',
-          timestamp: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
-          sender: { name: 'John Doe' },
-          receiver: { name: 'Alice Brown' }
-        }
-      ];
-      setTransactions(mockTransactions);
+      
+      if (!user?.id) {
+        setError('User not authenticated');
+        return;
+      }
+
+      const response = await fetch(`/api/transaction?userId=${user.id}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch transactions');
+      }
+
+      const data = await response.json();
+      console.log('Fetched transactions:', data);
+      setTransactions(data);
     } catch (err) {
       setError('Failed to load transactions');
       console.error('Load transactions error:', err);
@@ -79,8 +57,10 @@ export default function TransactionHistoryTab() {
   };
 
   useEffect(() => {
-    loadTransactions();
-  }, []);
+    if (user?.id) {
+      loadTransactions();
+    }
+  }, [user?.id]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -143,7 +123,7 @@ export default function TransactionHistoryTab() {
 
   const renderTransaction = ({ item }: { item: TransactionWithUsers }) => {
     const transactionType = getTransactionType(item);
-    const recipientName = transactionType.type === 'Sent' ? item.receiver.name : item.sender.name;
+    const recipientName = transactionType.type === 'Sent' ? item.receiver.fullName : item.sender.fullName;
     
     return (
       <View style={[styles.transactionCard, { backgroundColor: colors.background, borderColor: colors.tabIconDefault }]}>
@@ -153,7 +133,7 @@ export default function TransactionHistoryTab() {
               {recipientName}
             </Text>
             <Text style={[styles.transactionDate, { color: colors.tabIconDefault }]}>
-              {formatDate(item.timestamp)}
+              {formatDate(item.createdAt)}
             </Text>
             <Text style={[styles.transactionType, { color: transactionType.color }]}>
               {transactionType.type}
@@ -161,7 +141,7 @@ export default function TransactionHistoryTab() {
           </View>
           <View style={styles.amountInfo}>
             <Text style={[styles.amount, { color: colors.text }]}>
-              ${item.amount.toFixed(2)}
+              ${(parseFloat(String(item.amount || '0')) || 0).toFixed(2)}
             </Text>
             <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
               <Text style={styles.statusText}>
@@ -211,6 +191,18 @@ export default function TransactionHistoryTab() {
       />
     </View>
   );
+
+  if (!user) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.loadingContainer}>
+          <Text style={[styles.loadingText, { color: colors.text }]}>
+            Loading user data...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (loading) {
     return (
