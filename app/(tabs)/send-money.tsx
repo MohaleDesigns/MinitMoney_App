@@ -13,8 +13,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -40,6 +39,7 @@ const CURRENCIES = [
   { code: "CZK", name: "Czech Koruna", symbol: "Kč" },
   { code: "HUF", name: "Hungarian Forint", symbol: "Ft" },
   { code: "RUB", name: "Russian Ruble", symbol: "₽" },
+  { code: "ZAR", name: "South African Rand", symbol: "R" },
 ];
 
 interface User {
@@ -136,7 +136,9 @@ export default function SendMoneyScreenTab() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_IP_ADDRESS}:8081/api/user`);
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_IP_ADDRESS}:8081/api/user`
+      );
 
       const data = await response.json();
 
@@ -225,40 +227,32 @@ export default function SendMoneyScreenTab() {
                 <Text style={[styles.currencyLabel, { color: colors.text }]}>
                   Currency
                 </Text>
-                <TouchableOpacity
+                <View
                   style={[
-                    styles.currencyPicker,
+                    styles.selectContainer,
                     { borderColor: colors.tabIconDefault },
                   ]}
-                  onPress={() => {
-                    // Show currency picker modal
-                    Alert.alert(
-                      "Select Currency",
-                      "Choose a currency:",
-                      CURRENCIES.map((curr) => ({
-                        text: `${curr.symbol} ${curr.code} - ${curr.name}`,
-                        onPress: () => setCurrency(curr),
-                      }))
-                    );
-                  }}
                 >
-                  <Text
-                    style={[
-                      styles.currencyOption,
-                      { color: colors.tint, fontWeight: "bold" },
-                    ]}
+                  <Picker
+                    selectedValue={selectedUser?.id || ""}
+                    onValueChange={(itemValue) => {
+                      setCurrency(
+                        CURRENCIES.find((curr) => curr.code === itemValue) ||
+                          CURRENCIES[0]
+                      );
+                    }}
+                    style={[styles.picker, { color: colors.text }]}
                   >
-                    {currency.symbol} {currency.code}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.currencyDropdownIcon,
-                      { color: colors.tabIconDefault },
-                    ]}
-                  >
-                    ▼
-                  </Text>
-                </TouchableOpacity>
+                    <Picker.Item label="Select a curreny" value="" />
+                    {CURRENCIES.map((curr, idx) => (
+                      <Picker.Item
+                        key={idx}
+                        label={`${curr.code} - ${curr.name}`}
+                        value={curr.code}
+                      />
+                    ))}
+                  </Picker>
+                </View>
               </View>
             </View>
 
@@ -435,7 +429,8 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.02)",
   },
   picker: {
-    fontSize: 16,
+    padding: 0,
+    fontSize: 14,
   },
   errorText: {
     fontSize: 12,

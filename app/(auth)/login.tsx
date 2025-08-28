@@ -5,8 +5,9 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { useAuth } from '@/utils/AuthContext';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import minit_money_logo from '../../assets/images/minit_money_logo.png';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -135,6 +136,11 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
+            <Image
+              source={minit_money_logo}
+              style={styles.logo}
+              resizeMode="contain"
+            />
             <Text style={[styles.title, { color: colors.text }]}>
               Welcome Back
             </Text>
@@ -207,6 +213,11 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: 24,
     justifyContent: 'center',
+  },
+  logo: {
+    width: '70%',
+    height: 100,
+    marginBottom: 24,
   },
   header: {
     alignItems: 'center',

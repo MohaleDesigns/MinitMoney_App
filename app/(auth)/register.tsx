@@ -1,50 +1,61 @@
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
-import { useAuth } from '@/utils/AuthContext';
-import { router } from 'expo-router';
-import React, { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Colors } from "@/constants/Colors";
+import { useColorScheme } from "@/hooks/useColorScheme";
+import { useAuth } from "@/utils/AuthContext";
+import { router } from "expo-router";
+import React, { useState } from "react";
+import {
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import minit_money_logo from "../../assets/images/minit_money_logo.png";
 
 export default function RegisterScreen() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+
   const { register } = useAuth();
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
+  const colors = Colors[colorScheme ?? "light"];
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
     if (!name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = "Name is required";
     } else if (name.trim().length < 2) {
-      newErrors.name = 'Name must be at least 2 characters';
+      newErrors.name = "Name must be at least 2 characters";
     }
 
     if (!email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Please enter a valid email';
+      newErrors.email = "Please enter a valid email";
     }
 
     if (!password.trim()) {
-      newErrors.password = 'Password is required';
+      newErrors.password = "Password is required";
     } else if (password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = "Password must be at least 6 characters";
     }
 
     if (!confirmPassword.trim()) {
-      newErrors.confirmPassword = 'Please confirm your password';
+      newErrors.confirmPassword = "Please confirm your password";
     } else if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = "Passwords do not match";
     }
 
     setErrors(newErrors);
@@ -55,47 +66,65 @@ export default function RegisterScreen() {
     if (!validateForm()) return;
 
     setLoading(true);
-    
+
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_IP_ADDRESS}:8081/api/user`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, fullName: name, password, balance: 1000 }),
-      });
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_IP_ADDRESS}:8081/api/user`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email,
+            fullName: name,
+            password,
+            balance: 1000,
+          }),
+        }
+      );
 
       const data = await response.json();
 
       Alert.alert(
-        'Success!', 
-        'Account created successfully! Welcome to MinitMoney!',
+        "Success!",
+        "Account created successfully! Welcome to MinitMoney!",
         [
-          { 
-            text: 'Continue', 
-            onPress: () => router.replace('/(auth)/login') 
-          }
+          {
+            text: "Continue",
+            onPress: () => router.replace("/(auth)/login"),
+          },
         ]
       );
     } catch (error: any) {
       console.log(error);
-      Alert.alert('Error', error.message || 'Registration failed. Please try again.');
+      Alert.alert(
+        "Error",
+        error.message || "Registration failed. Please try again."
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardView}
       >
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
+            <Image
+              source={minit_money_logo}
+              style={styles.logo}
+              resizeMode="contain"
+            />
             <Text style={[styles.title, { color: colors.text }]}>
               Create Account
             </Text>
@@ -146,15 +175,22 @@ export default function RegisterScreen() {
               title="Create Account"
               onPress={handleRegister}
               loading={loading}
-              disabled={!name.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()}
+              disabled={
+                !name.trim() ||
+                !email.trim() ||
+                !password.trim() ||
+                !confirmPassword.trim()
+              }
               style={styles.registerButton}
             />
 
             <View style={styles.footer}>
-              <Text style={[styles.footerText, { color: colors.tabIconDefault }]}>
-                Already have an account?{' '}
+              <Text
+                style={[styles.footerText, { color: colors.tabIconDefault }]}
+              >
+                Already have an account?{" "}
               </Text>
-              <TouchableOpacity onPress={() => router.push('/login' as any)}>
+              <TouchableOpacity onPress={() => router.push("/login" as any)}>
                 <Text style={[styles.linkText, { color: colors.tint }]}>
                   Sign In
                 </Text>
@@ -177,21 +213,26 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: 24,
-    justifyContent: 'center',
+    justifyContent: "center",
+  },
+  logo: {
+    width: "70%",
+    height: 100,
+    marginBottom: 24,
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 48,
   },
   title: {
     fontSize: 32,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 24,
   },
   form: {
@@ -201,15 +242,16 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 24,
   },
   footerText: {
     fontSize: 16,
   },
   linkText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

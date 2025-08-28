@@ -31,11 +31,11 @@ export const Button: React.FC<ButtonProps> = ({
     styles.button,
     styles[size],
     styles[variant],
-    variant === 'primary' && { backgroundColor: colors.tint },
+    variant === 'primary' && { backgroundColor: '#F7BA27' },
     variant === 'secondary' && { backgroundColor: colors.background },
     variant === 'outline' && { 
       backgroundColor: 'transparent',
-      borderColor: colors.tint,
+      borderColor: '#F7BA27',
       borderWidth: 1
     },
     disabled && styles.disabled,
@@ -47,7 +47,7 @@ export const Button: React.FC<ButtonProps> = ({
     styles[`${size}Text`],
     variant === 'primary' && { color: '#fff' },
     variant === 'secondary' && { color: colors.text },
-    variant === 'outline' && { color: colors.tint },
+    variant === 'outline' && { color: '#F7BA27' },
     disabled && styles.disabledText,
     textStyle
   ];
@@ -61,7 +61,7 @@ export const Button: React.FC<ButtonProps> = ({
     >
       {loading ? (
         <ActivityIndicator 
-          color={variant === 'primary' ? '#fff' : colors.tint} 
+          color={variant === 'primary' ? '#104E95' : colors.tint} 
           size="small" 
         />
       ) : (
