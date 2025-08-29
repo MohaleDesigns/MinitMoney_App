@@ -2,18 +2,65 @@ import { ThemedText } from '@/components/ThemedText';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useAuth } from '@/utils/AuthContext';
+import { calculateTransactionStats, formatCurrency, getFirstName } from '@/utils/helpers';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+
+interface TransactionWithUsers {
+  id: string;
+  senderId: string;
+  receiverId: string;
+  amount: number;
+  description: string;
+  status: 'completed' | 'pending' | 'failed';
+  createdAt: string;
+  sender: { id: string; fullName: string; email: string };
+  receiver: { id: string; fullName: string; email: string };
+}
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const { user, logout } = useAuth();
-  const [stats, setStats] = useState({ totalSent: 1250.50, totalReceived: 800.25, totalTransactions: 12 });
+  const [loading, setLoading] = useState(false);
+  const [transactions, setTransactions] = useState<TransactionWithUsers[]>([]);
+  const [transactionStats, setTransactionStats] = useState({
+    totalTransactions: 0,
+    totalSent: 0,
+    totalReceived: 0,
+    netPosition: 0
+  });
 
-  const handleLogout = () => {
+  const loadTransactions = async () => {
+    try {
+      if (!user?.id) return;
+
+      const response = await fetch(`/api/transaction?userId=${user.id}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch transactions');
+      }
+
+      const data = await response.json();
+      setTransactions(data);
+      
+      // Calculate stats from transaction data
+      const stats = calculateTransactionStats(data, user.id);
+      setTransactionStats(stats);
+    } catch (err) {
+      console.error('Load transactions error:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.id) {
+      loadTransactions();
+    }
+  }, [user?.id]);
+
+  const handleLogout = async () => {
     Alert.alert(
       'Logout',
       'Are you sure you want to logout?',
@@ -22,7 +69,14 @@ export default function HomeScreen() {
         { 
           text: 'Logout', 
           style: 'destructive',
-          onPress: logout
+          onPress: async () => {
+            try {
+              await logout();
+              router.replace('/(auth)/login');
+            } catch (error) {
+              console.error('Logout error:', error);
+            }
+          }
         }
       ]
     );
@@ -38,10 +92,10 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <View style={styles.userInfo}>
           <ThemedText type="title" style={styles.welcomeText}>
-            Welcome back, {user?.name || 'User'}! 👋
+            Welcome back, {getFirstName(user?.name)}! 👋
           </ThemedText>
           <ThemedText style={styles.subtitleText}>
-            Ready to send money? Choose an option below
+            {user?.email || 'user@example.com'}
           </ThemedText>
         </View>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
@@ -52,9 +106,40 @@ export default function HomeScreen() {
       {/* Balance Card */}
       <View style={[styles.balanceCard, { backgroundColor: colors.background, borderColor: colors.tabIconDefault }]}>
         <ThemedText style={styles.balanceLabel}>Current Balance</ThemedText>
-        <ThemedText type="title" style={[styles.balanceAmount, { color: colors.tint }]}>
-          ${user?.balance?.toFixed(2) || '0.00'}
-        </ThemedText>
+        {!user ? (
+          <View style={styles.loadingContainer}>
+            <ThemedText style={styles.loadingText}>Loading...</ThemedText>
+          </View>
+        ) : (
+          <ThemedText type="title" style={[styles.balanceAmount, { color: colors.tint }]}>
+            {formatCurrency(user?.balance)}
+          </ThemedText>
+        )}
+      </View>
+
+      {/* User Details Card */}
+      <View style={[styles.userDetailsCard, { backgroundColor: colors.background, borderColor: colors.tabIconDefault }]}>
+        <ThemedText type="subtitle" style={styles.userDetailsTitle}>Account Details</ThemedText>
+        {!user ? (
+          <View style={styles.loadingContainer}>
+            <ThemedText style={styles.loadingText}>Loading user details...</ThemedText>
+          </View>
+        ) : (
+          <>
+            <View style={styles.userDetailRow}>
+              <ThemedText style={styles.userDetailLabel}>Full Name:</ThemedText>
+              <ThemedText style={styles.userDetailValue}>{user?.name || 'N/A'}</ThemedText>
+            </View>
+            <View style={styles.userDetailRow}>
+              <ThemedText style={styles.userDetailLabel}>Email:</ThemedText>
+              <ThemedText style={styles.userDetailValue}>{user?.email || 'N/A'}</ThemedText>
+            </View>
+            <View style={styles.userDetailRow}>
+              <ThemedText style={styles.userDetailLabel}>Balance:</ThemedText>
+              <ThemedText style={styles.userDetailValue}>{formatCurrency(user?.balance)}</ThemedText>
+            </View>
+          </>
+        )}
       </View>
 
       {/* Feature Cards */}
@@ -103,23 +188,21 @@ export default function HomeScreen() {
         </ThemedText>
         <View style={styles.statsRow}>
           <View style={[styles.statCard, { backgroundColor: colors.background, borderColor: colors.tabIconDefault }]}>
-            <ThemedText style={styles.statNumber}>{stats.totalTransactions}</ThemedText>
+            <ThemedText style={styles.statNumber}>{transactionStats.totalTransactions}</ThemedText>
             <ThemedText style={styles.statLabel}>Transactions</ThemedText>
           </View>
           <View style={[styles.statCard, { backgroundColor: colors.background, borderColor: colors.tabIconDefault }]}>
-            <ThemedText style={styles.statNumber}>${stats.totalSent.toFixed(2)}</ThemedText>
+            <ThemedText style={styles.statNumber}>{formatCurrency(transactionStats.totalSent)}</ThemedText>
             <ThemedText style={styles.statLabel}>Total Sent</ThemedText>
           </View>
         </View>
         <View style={styles.statsRow}>
           <View style={[styles.statCard, { backgroundColor: colors.background, borderColor: colors.tabIconDefault }]}>
-            <ThemedText style={styles.statNumber}>${stats.totalReceived.toFixed(2)}</ThemedText>
+            <ThemedText style={styles.statNumber}>{formatCurrency(transactionStats.totalReceived)}</ThemedText>
             <ThemedText style={styles.statLabel}>Total Received</ThemedText>
           </View>
           <View style={[styles.statCard, { backgroundColor: colors.background, borderColor: colors.tabIconDefault }]}>
-            <ThemedText style={styles.statNumber}>
-              ${((stats.totalReceived - stats.totalSent) + (user?.balance || 0)).toFixed(2)}
-            </ThemedText>
+            <ThemedText style={styles.statNumber}>{formatCurrency(transactionStats.netPosition)}</ThemedText>
             <ThemedText style={styles.statLabel}>Net Position</ThemedText>
           </View>
         </View>
@@ -142,6 +225,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
+    paddingTop: 30,
   },
   header: {
     flexDirection: 'row',
@@ -187,6 +271,48 @@ const styles = StyleSheet.create({
   balanceAmount: {
     fontSize: 36,
     fontWeight: 'bold',
+  },
+  userDetailsCard: {
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  userDetailsTitle: {
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  userDetailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.1)',
+  },
+  userDetailLabel: {
+    fontSize: 13,
+    opacity: 0.7,
+    fontWeight: '500',
+  },
+  userDetailValue: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    opacity: 0.7,
+    fontStyle: 'italic',
   },
   featuresContainer: {
     marginBottom: 24,

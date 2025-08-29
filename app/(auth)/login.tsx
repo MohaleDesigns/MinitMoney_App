@@ -4,16 +4,18 @@ import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useAuth } from '@/utils/AuthContext';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import minit_money_logo from '../../assets/images/minit_money_logo.png';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+  const [users, setUsers] = useState<any[]>([]);
+
   const { login } = useAuth();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
@@ -42,34 +44,25 @@ export default function LoginScreen() {
 
     setLoading(true);
     
-    try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+    try {// Check if fetched users contain a matching user
+      const matchingUser = users.find(user => {
+        const emailMatch = user.email === email.trim();
+        const passwordMatch = user.passwordHash === password;
+        return emailMatch && passwordMatch;
+      });
       
-      // For demo purposes, accept any valid email/password combination
-      // In a real app, you'd validate against your backend
-      if (email.trim() && password.trim()) {
-        // Create user data
+      if (matchingUser) {
+        // Create user data from the matched user
         const userData = {
-          id: '1',
-          email: email.trim(),
-          name: email.split('@')[0], // Use email prefix as name for demo
-          token: 'demo-token-' + Date.now(),
-          balance: 2500.75
+          id: matchingUser.id || '1',
+          email: matchingUser.email,
+          name: matchingUser.fullName || matchingUser.email.split('@')[0],
+          token: 'auth-token-' + Date.now(),
+          balance: matchingUser.balance || 0
         };
         
         await login(userData);
-        
-        Alert.alert(
-          'Success!', 
-          'Login successful!',
-          [
-            { 
-              text: 'Continue', 
-              onPress: () => router.replace('/(tabs)') 
-            }
-          ]
-        );
+        router.replace('/(tabs)') 
       } else {
         Alert.alert('Error', 'Invalid credentials. Please try again.');
       }
@@ -112,6 +105,26 @@ export default function LoginScreen() {
     }
   };
 
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_IP_ADDRESS}:8081/api/user`);
+
+      const data = await response.json();
+
+      setUsers(data);
+    } catch (error: any) {
+      console.log(error);
+      Alert.alert(
+        "Error",
+        error.message || "Failed to fetch users. Please try again."
+      );
+    }
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView 
@@ -123,6 +136,11 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
+            <Image
+              source={minit_money_logo}
+              style={styles.logo}
+              resizeMode="contain"
+            />
             <Text style={[styles.title, { color: colors.text }]}>
               Welcome Back
             </Text>
@@ -159,17 +177,17 @@ export default function LoginScreen() {
               style={styles.loginButton}
             />
 
-            <Button
+            {/* <Button
               title="Try Demo Account"
               onPress={handleDemoLogin}
               loading={loading}
               variant="outline"
               style={styles.demoButton}
-            />
+            /> */}
 
             <View style={styles.footer}>
               <Text style={[styles.footerText, { color: colors.tabIconDefault }]}>
-                Don't have an account?{' '}
+                Don&apos;t have an account?{' '}
               </Text>
               <TouchableOpacity onPress={() => router.push('/register' as any)}>
                 <Text style={[styles.linkText, { color: colors.tint }]}>
@@ -195,6 +213,11 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: 24,
     justifyContent: 'center',
+  },
+  logo: {
+    width: '70%',
+    height: 100,
+    marginBottom: 24,
   },
   header: {
     alignItems: 'center',

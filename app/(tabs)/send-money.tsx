@@ -3,18 +3,17 @@ import { Input } from "@/components/ui/Input";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/utils/AuthContext";
+import { Picker } from "@react-native-picker/picker";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
-  FlatList,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -40,64 +39,32 @@ const CURRENCIES = [
   { code: "CZK", name: "Czech Koruna", symbol: "Kč" },
   { code: "HUF", name: "Hungarian Forint", symbol: "Ft" },
   { code: "RUB", name: "Russian Ruble", symbol: "₽" },
+  { code: "ZAR", name: "South African Rand", symbol: "R" },
 ];
 
 interface User {
   id: string;
-  email: string;
-  name: string;
+  fullName: string;
 }
 
-export default function SendMoneyTab() {
-  const [recipient, setRecipient] = useState("");
+export default function SendMoneyScreenTab() {
+  const { user, logout } = useAuth();
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState(CURRENCIES[0]);
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [searchResults, setSearchResults] = useState<User[]>([]);
-  const [showSearchResults, setShowSearchResults] = useState(false);
-  const [selectedRecipient, setSelectedRecipient] = useState<User | null>(null);
 
-  const { user } = useAuth();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
-
-  // Search for users when recipient input changes
-  useEffect(() => {
-    const searchUsers = async () => {
-      if (recipient.trim().length >= 2) {
-        try {
-          // Mock search results
-          const mockResults = [
-            { id: "2", email: "jane@example.com", name: "Jane Smith" },
-            { id: "3", email: "bob@example.com", name: "Bob Johnson" },
-            { id: "4", email: "alice@example.com", name: "Alice Brown" },
-          ].filter(
-            (user) =>
-              user.name.toLowerCase().includes(recipient.toLowerCase()) ||
-              user.email.toLowerCase().includes(recipient.toLowerCase())
-          );
-          setSearchResults(mockResults);
-          setShowSearchResults(true);
-        } catch (error) {
-          console.error("Search failed:", error);
-        }
-      } else {
-        setSearchResults([]);
-        setShowSearchResults(false);
-      }
-    };
-
-    const timeoutId = setTimeout(searchUsers, 500);
-    return () => clearTimeout(timeoutId);
-  }, [recipient]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!selectedRecipient) {
-      newErrors.recipient = "Please select a recipient from the search results";
+    if (!selectedUser) {
+      newErrors.recipient = "Please select a recipient";
     }
 
     if (!amount.trim()) {
@@ -106,46 +73,49 @@ export default function SendMoneyTab() {
       newErrors.amount = "Please enter a valid amount";
     }
 
-    if (Number(amount) > (user?.balance || 0)) {
-      newErrors.amount = "Insufficient balance";
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSendMoney = async () => {
-    if (!validateForm() || !selectedRecipient) return;
+    if (!validateForm()) return;
 
     setLoading(true);
 
     try {
-      // Mock transaction creation
-      const mockTransaction = {
-        id: Date.now().toString(),
-        senderId: user?.id || '1',
-        receiverId: selectedRecipient.id,
-        amount: Number(amount),
-        description: description || "Money transfer",
-        timestamp: new Date().toISOString(),
-      };
-
-      Alert.alert(
-        "Success!",
-        `${currency.symbol} ${amount} ${currency.code} sent to ${selectedRecipient.name} successfully!`,
-        [
-          {
-            text: "View History",
-            onPress: () => router.push("/transaction-history"),
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_IP_ADDRESS}:8081/api/transaction`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-          { text: "Send More", onPress: () => resetForm() },
-        ]
+          body: JSON.stringify({
+            amount: parseFloat(amount),
+            currency: currency.code,
+            type: "SEND",
+            status: "PENDING",
+            description: description,
+            fee: 0,
+            senderId: user?.id, // You'll need to get this from auth context
+            receiverId: selectedUser?.id,
+          }),
+        }
       );
-      resetForm();
+
+      const data = await response.json();
+
+      Alert.alert("Success!", "Money sent successfully!", [
+        {
+          text: "Continue",
+          onPress: () => router.replace("/(tabs)"),
+        },
+      ]);
     } catch (error: any) {
+      console.log(error);
       Alert.alert(
         "Error",
-        error.message || "Failed to send money. Please try again."
+        error.message || "Transaction failed. Please try again."
       );
     } finally {
       setLoading(false);
@@ -153,37 +123,34 @@ export default function SendMoneyTab() {
   };
 
   const resetForm = () => {
-    setRecipient("");
+    setSelectedUser(null);
     setAmount("");
     setCurrency(CURRENCIES[0]);
     setDescription("");
     setErrors({});
-    setSelectedRecipient(null);
-    setSearchResults([]);
-    setShowSearchResults(false);
   };
 
-  const selectRecipient = (user: User) => {
-    setSelectedRecipient(user);
-    setRecipient(user.email);
-    setShowSearchResults(false);
-  };
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
-  const renderSearchResult = ({ item }: { item: User }) => (
-    <TouchableOpacity
-      style={[styles.searchResult, { borderColor: colors.tabIconDefault }]}
-      onPress={() => selectRecipient(item)}
-    >
-      <Text style={[styles.searchResultName, { color: colors.text }]}>
-        {item.name}
-      </Text>
-      <Text
-        style={[styles.searchResultEmail, { color: colors.tabIconDefault }]}
-      >
-        {item.email}
-      </Text>
-    </TouchableOpacity>
-  );
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_IP_ADDRESS}:8081/api/user`
+      );
+
+      const data = await response.json();
+
+      setUsers(data);
+    } catch (error: any) {
+      console.log(error);
+      Alert.alert(
+        "Error",
+        error.message || "Failed to fetch users. Please try again."
+      );
+    }
+  };
 
   return (
     <SafeAreaView
@@ -208,48 +175,39 @@ export default function SendMoneyTab() {
 
           <View style={styles.form}>
             <View style={styles.recipientContainer}>
-              <Input
-                label="Recipient"
-                placeholder="Search by email or name"
-                value={recipient}
-                onChangeText={setRecipient}
-                error={errors.recipient}
-              />
-
-              {showSearchResults && searchResults.length > 0 && (
-                <View
-                  style={[
-                    styles.searchResults,
-                    { borderColor: colors.tabIconDefault },
-                  ]}
+              <Text style={[styles.inputLabel, { color: colors.text }]}>
+                Recipient
+              </Text>
+              <View
+                style={[
+                  styles.selectContainer,
+                  { borderColor: colors.tabIconDefault },
+                ]}
+              >
+                <Picker
+                  selectedValue={selectedUser?.id || ""}
+                  onValueChange={(itemValue) => {
+                    const user = users.find((u) => u.id === itemValue);
+                    setSelectedUser(user || null);
+                    setErrors((prev) => ({ ...prev, recipient: "" }));
+                  }}
+                  style={[styles.picker, { color: colors.text }]}
                 >
-                  <FlatList
-                    data={searchResults}
-                    renderItem={renderSearchResult}
-                    keyExtractor={(item) => item.id}
-                    showsVerticalScrollIndicator={false}
-                    nestedScrollEnabled
-                  />
-                </View>
-              )}
+                  <Picker.Item label="Select a recipient" value="" />
+                  {users.map((user) => (
+                    <Picker.Item
+                      key={user.id}
+                      label={`${user.fullName}`}
+                      value={user.id}
+                    />
+                  ))}
+                </Picker>
+              </View>
 
-              {selectedRecipient && (
-                <View
-                  style={[
-                    styles.selectedRecipient,
-                    { backgroundColor: colors.tint + "20" },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.selectedRecipientText,
-                      { color: colors.tint },
-                    ]}
-                  >
-                    Selected: {selectedRecipient.name} (
-                    {selectedRecipient.email})
-                  </Text>
-                </View>
+              {errors.recipient && (
+                <Text style={[styles.errorText, { color: "#ff4444" }]}>
+                  {errors.recipient}
+                </Text>
               )}
             </View>
 
@@ -269,40 +227,32 @@ export default function SendMoneyTab() {
                 <Text style={[styles.currencyLabel, { color: colors.text }]}>
                   Currency
                 </Text>
-                <TouchableOpacity
+                <View
                   style={[
-                    styles.currencyPicker,
+                    styles.selectContainer,
                     { borderColor: colors.tabIconDefault },
                   ]}
-                  onPress={() => {
-                    // Show currency picker modal
-                    Alert.alert(
-                      "Select Currency",
-                      "Choose a currency:",
-                      CURRENCIES.map((curr) => ({
-                        text: `${curr.symbol} ${curr.code} - ${curr.name}`,
-                        onPress: () => setCurrency(curr),
-                      }))
-                    );
-                  }}
                 >
-                  <Text
-                    style={[
-                      styles.currencyOption,
-                      { color: colors.tint, fontWeight: "bold" },
-                    ]}
+                  <Picker
+                    selectedValue={selectedUser?.id || ""}
+                    onValueChange={(itemValue) => {
+                      setCurrency(
+                        CURRENCIES.find((curr) => curr.code === itemValue) ||
+                          CURRENCIES[0]
+                      );
+                    }}
+                    style={[styles.picker, { color: colors.text }]}
                   >
-                    {currency.symbol} {currency.code}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.currencyDropdownIcon,
-                      { color: colors.tabIconDefault },
-                    ]}
-                  >
-                    ▼
-                  </Text>
-                </TouchableOpacity>
+                    <Picker.Item label="Select a curreny" value="" />
+                    {CURRENCIES.map((curr, idx) => (
+                      <Picker.Item
+                        key={idx}
+                        label={`${curr.code} - ${curr.name}`}
+                        value={curr.code}
+                      />
+                    ))}
+                  </Picker>
+                </View>
               </View>
             </View>
 
@@ -344,20 +294,7 @@ export default function SendMoneyTab() {
                   Recipient:
                 </Text>
                 <Text style={[styles.summaryValue, { color: colors.text }]}>
-                  {selectedRecipient?.name || "--"}
-                </Text>
-              </View>
-              <View style={styles.summaryRow}>
-                <Text
-                  style={[
-                    styles.summaryLabel,
-                    { color: colors.tabIconDefault },
-                  ]}
-                >
-                  Your Balance:
-                </Text>
-                <Text style={[styles.summaryValue, { color: colors.text }]}>
-                                     ${user?.balance?.toFixed(2) || '0.00'}
+                  {selectedUser ? `${selectedUser.fullName}` : "--"}
                 </Text>
               </View>
             </View>
@@ -366,7 +303,7 @@ export default function SendMoneyTab() {
               title="Send Money"
               onPress={handleSendMoney}
               loading={loading}
-              disabled={!selectedRecipient || !amount.trim()}
+              disabled={!selectedUser || !amount.trim()}
               style={styles.sendButton}
             />
 
@@ -413,38 +350,6 @@ const styles = StyleSheet.create({
   form: {
     flex: 1,
   },
-  recipientContainer: {
-    marginBottom: 16,
-  },
-  searchResults: {
-    borderWidth: 1,
-    borderRadius: 12,
-    maxHeight: 200,
-    marginTop: 8,
-    backgroundColor: "white",
-  },
-  searchResult: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-  },
-  searchResultName: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  searchResultEmail: {
-    fontSize: 14,
-  },
-  selectedRecipient: {
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 8,
-  },
-  selectedRecipientText: {
-    fontSize: 14,
-    fontWeight: "500",
-  },
   amountRow: {
     flexDirection: "row",
     gap: 16,
@@ -454,7 +359,7 @@ const styles = StyleSheet.create({
     flex: 2,
   },
   currencyContainer: {
-    width: 150,
+    width: "50%",
   },
   currencyLabel: {
     fontSize: 16,
@@ -472,12 +377,12 @@ const styles = StyleSheet.create({
   },
   currencyOption: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: "600",
     textAlign: "center",
   },
   currencyDropdownIcon: {
-    fontSize: 10,
+    fontSize: 12,
     marginLeft: 8,
   },
   summary: {
@@ -508,5 +413,27 @@ const styles = StyleSheet.create({
   },
   clearButton: {
     marginBottom: 24,
+  },
+  recipientContainer: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  selectContainer: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 0,
+    backgroundColor: "rgba(0,0,0,0.02)",
+  },
+  picker: {
+    padding: 0,
+    fontSize: 14,
+  },
+  errorText: {
+    fontSize: 12,
+    marginTop: 4,
   },
 });
