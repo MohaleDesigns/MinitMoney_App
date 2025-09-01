@@ -52,6 +52,12 @@ A modern, cross-platform mobile application for instant money transfers and fina
    npm install
    ```
 
+2. **Migrate** 
+   ```on the terminal
+   # You are syncing database
+   npx prisma migrate dev --name init
+   ```
+
 2. **Set the right IP Address**
    ```on the .env
    # I pushed the .env file just to make thing easy for you as it is not good practice
@@ -69,7 +75,7 @@ A modern, cross-platform mobile application for instant money transfers and fina
    1. On your terminal type "ifconfig" without the double qoutation marks
    2. Look for the inet value under your active interface (usually en0 for Wi-Fi).
 
-   On Mac
+   On Linux
    1. On your terminal type "ip addr show" without the double qoutation marks
    2. Look for the inet value under your active network interface (like wlan0 or eth0).
       Example: 192.168.1.10/24 
